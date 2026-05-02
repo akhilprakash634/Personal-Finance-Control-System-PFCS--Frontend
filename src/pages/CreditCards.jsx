@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useFinanceStore } from "../store/financeStore";
 import { createCreditCard, createCreditCardLoan } from "../api/client";
-import { CreditCard as CardIcon, Plus, AlertCircle, Info } from "lucide-react";
+import { CreditCard as CardIcon, Plus, AlertCircle, Info, Receipt } from "lucide-react";
 
 export default function CreditCards() {
   const { creditCards, fetchCreditCards, creditCardLoans, fetchCreditCardLoans, loading } = useFinanceStore();
@@ -10,6 +10,7 @@ export default function CreditCards() {
     limit: 0,
     used_amount: 0,
     available_limit: 0,
+    current_month_bill: 0,
     interest_rate: 0,
     minimum_due: 0,
     billing_date: 1,
@@ -36,7 +37,11 @@ export default function CreditCards() {
     e.preventDefault();
     try {
       await createCreditCard(formData);
-      setFormData({ name: "", limit: 0, used_amount: 0, available_limit: 0, interest_rate: 0, minimum_due: 0, billing_date: 1, due_date: 1 });
+      setFormData({ 
+        name: "", limit: 0, used_amount: 0, available_limit: 0, 
+        current_month_bill: 0, interest_rate: 0, minimum_due: 0, 
+        billing_date: 1, due_date: 1 
+      });
       fetchCreditCards();
     } catch (error) {
       console.error("Error creating credit card:", error);
@@ -79,17 +84,22 @@ export default function CreditCards() {
                 <input type="number" step="0.01" className="form-control" required value={formData.limit} onChange={(e) => setFormData({ ...formData, limit: parseFloat(e.target.value) })} />
               </div>
               <div className="form-group">
-                <label className="form-label">Used Amount (Swipes)</label>
+                <label className="form-label">Used Amount (Total Swipes)</label>
                 <input type="number" step="0.01" className="form-control" required value={formData.used_amount} onChange={(e) => setFormData({ ...formData, used_amount: parseFloat(e.target.value) })} />
               </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">Available Limit (Source: Bank App)</label>
-              <div className="flex items-center gap-2 mb-2 text-xs text-secondary">
-                <Info size={14} /> This should be the actual limit shown in your app, excluding blocked EMI amounts.
+            
+            <div className="grid-2" style={{gap: '1rem'}}>
+              <div className="form-group">
+                <label className="form-label">Current Month Bill (₹)</label>
+                <input type="number" step="0.01" className="form-control" required value={formData.current_month_bill} onChange={(e) => setFormData({ ...formData, current_month_bill: parseFloat(e.target.value) })} />
               </div>
-              <input type="number" step="0.01" className="form-control" required value={formData.available_limit} onChange={(e) => setFormData({ ...formData, available_limit: parseFloat(e.target.value) })} />
+              <div className="form-group">
+                <label className="form-label">Available Limit (Per Bank App)</label>
+                <input type="number" step="0.01" className="form-control" required value={formData.available_limit} onChange={(e) => setFormData({ ...formData, available_limit: parseFloat(e.target.value) })} />
+              </div>
             </div>
+
             <div className="grid-2" style={{gap: '1rem'}}>
               <div className="form-group">
                 <label className="form-label">Interest Rate (%)</label>
@@ -100,6 +110,18 @@ export default function CreditCards() {
                 <input type="number" step="0.01" className="form-control" required value={formData.minimum_due} onChange={(e) => setFormData({ ...formData, minimum_due: parseFloat(e.target.value) })} />
               </div>
             </div>
+            
+            <div className="grid-2" style={{gap: '1rem'}}>
+               <div className="form-group">
+                 <label className="form-label">Billing Date</label>
+                 <input type="number" min="1" max="31" className="form-control" required value={formData.billing_date} onChange={(e) => setFormData({ ...formData, billing_date: parseInt(e.target.value) })} />
+               </div>
+               <div className="form-group">
+                 <label className="form-label">Due Date</label>
+                 <input type="number" min="1" max="31" className="form-control" required value={formData.due_date} onChange={(e) => setFormData({ ...formData, due_date: parseInt(e.target.value) })} />
+               </div>
+            </div>
+
             <button type="submit" className="btn btn-primary w-full">
               <Plus size={18} /> Add Card
             </button>
@@ -150,7 +172,7 @@ export default function CreditCards() {
 
       {/* SECTION 3: YOUR CARDS */}
       <div>
-        <h2 className="mb-4">Active Credit Cards (Utilization)</h2>
+        <h2 className="mb-4">Active Credit Cards</h2>
         {creditCards.length === 0 ? (
           <p className="text-secondary">No credit cards found.</p>
         ) : (
@@ -166,24 +188,28 @@ export default function CreditCards() {
                     </div>
                     <div className="text-right">
                       <div className="text-danger font-semibold">₹{card.used_amount.toLocaleString()}</div>
-                      <div className="text-xs text-secondary">Swipes</div>
+                      <div className="text-xs text-secondary">Total Used</div>
                     </div>
                   </div>
                   
                   <div className="mb-4">
+                    <div className="flex justify-between text-xs text-secondary mb-1">
+                       <span>{util}% Utilization</span>
+                       <span className="text-warning">Bill: ₹{card.current_month_bill.toLocaleString()}</span>
+                    </div>
                     <div style={{height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden'}}>
                       <div style={{height: '100%', background: util > 30 ? 'var(--accent-warning)' : 'var(--accent-success)', width: `${Math.min(util, 100)}%`}}></div>
                     </div>
                     <div className="flex justify-between text-secondary mt-2" style={{fontSize: '0.8rem'}}>
-                      <span>{util}% Utilization</span>
-                      <span>Available: ₹{card.available_limit.toLocaleString()}</span>
+                      <span>Limit: ₹{card.limit.toLocaleString()}</span>
+                      <span>Avail: ₹{card.available_limit.toLocaleString()}</span>
                     </div>
                   </div>
 
                   <div className="bg-base p-3 rounded flex-col gap-2" style={{fontSize: '0.875rem'}}>
                     <div className="flex justify-between">
-                      <span className="text-secondary">Total Card Limit</span>
-                      <span>₹{card.limit.toLocaleString()}</span>
+                      <span className="text-secondary">Billing Date</span>
+                      <span>Day {card.billing_date}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-secondary">Interest Rate</span>
@@ -222,7 +248,7 @@ export default function CreditCards() {
                     Balance: <span className="text-primary">₹{loan.remaining_amount.toLocaleString()}</span>
                   </div>
                   <div className="text-xs text-secondary">
-                    Rate: {loan.interest_rate}% ({loan.interest_type})
+                    Rate: {loan.interest_rate}%
                   </div>
                 </div>
               </div>
