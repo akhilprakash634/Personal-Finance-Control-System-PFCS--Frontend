@@ -79,10 +79,6 @@ export default function Dashboard() {
               <span>₹{monthly_requirement.loan_emi_total.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
-              <span>Credit Card EMIs</span>
-              <span>₹{monthly_requirement.credit_card_loan_emi_total.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
               <span>Credit Cards Min Due</span>
               <span>₹{monthly_requirement.credit_min_due_total.toLocaleString()}</span>
             </div>
