@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useFinanceStore } from "../store/financeStore";
 import { createCreditCard, createCreditCardLoan } from "../api/client";
-import { CreditCard as CardIcon, Plus, AlertCircle, Info, Receipt, TrendingDown, Calculator } from "lucide-react";
+import { CreditCard as CardIcon, Plus, AlertCircle, Info, Receipt, TrendingDown, Calculator, Percent } from "lucide-react";
 
 export default function CreditCards() {
   const { creditCards, fetchCreditCards, creditCardLoans, fetchCreditCardLoans, loading } = useFinanceStore();
@@ -53,21 +53,20 @@ export default function CreditCards() {
     e.preventDefault();
     
     let finalInterestRate = loanFormData.interest_rate;
-    
-    // Auto-calculate interest rate if set to 0
     if (finalInterestRate === 0 && loanFormData.emi > 0 && loanFormData.tenure_months > 0 && loanFormData.principal > 0) {
       const totalPaid = loanFormData.emi * loanFormData.tenure_months;
       const totalInterest = totalPaid - loanFormData.principal;
-      // Simple Interest approximation for effective rate
-      finalInterestRate = (totalInterest / loanFormData.principal) / (loanFormData.tenure_months / 12) * 100;
-      finalInterestRate = parseFloat(finalInterestRate.toFixed(2));
+      if (totalInterest > 0) {
+        finalInterestRate = (totalInterest / loanFormData.principal) / (loanFormData.tenure_months / 12) * 100;
+        finalInterestRate = parseFloat(finalInterestRate.toFixed(2));
+      }
     }
 
     try {
       await createCreditCardLoan({
         ...loanFormData,
         card_id: parseInt(loanFormData.card_id),
-        interest_rate: finalInterestRate,
+        interest_rate: Math.max(0, finalInterestRate),
         remaining_amount: loanFormData.remaining_amount || loanFormData.principal
       });
       setLoanFormData({ card_id: "", name: "", principal: 0, remaining_amount: 0, interest_rate: 0, interest_type: "yearly", emi: 0, tenure_months: 12, emis_paid: 0 });
@@ -217,9 +216,20 @@ export default function CreditCards() {
                     <div style={{height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden'}}>
                       <div style={{height: '100%', background: util > 30 ? 'var(--accent-warning)' : 'var(--accent-success)', width: `${Math.min(util, 100)}%`}}></div>
                     </div>
-                    <div className="flex justify-between text-secondary mt-2" style={{fontSize: '0.8rem'}}>
-                      <span>Limit: ₹{card.limit.toLocaleString()}</span>
-                      <span>Avail: ₹{card.available_limit.toLocaleString()}</span>
+                  </div>
+
+                  <div className="bg-base p-3 rounded flex-col gap-2" style={{fontSize: '0.875rem'}}>
+                    <div className="flex justify-between items-center">
+                      <span className="text-secondary">Standard Swipes</span>
+                      <span>₹{card.used_amount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-secondary">EMI Loan Balance</span>
+                      <span className="text-warning font-semibold">₹{emiDebt.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center mt-1 pt-1 border-t border-white/5">
+                      <span className="text-secondary">Available Limit</span>
+                      <span className="text-success font-semibold">₹{card.available_limit.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -240,7 +250,9 @@ export default function CreditCards() {
         ) : (
           <div className="grid-cards">
             {creditCardLoans.map((loan) => {
-              const interestMonth = (loan.remaining_amount * (loan.interest_rate / 100)) / 12;
+              const card = creditCards.find(c => c.id === loan.card_id);
+              const effectiveRate = loan.interest_rate > 0 ? loan.interest_rate : (card?.interest_rate || 0);
+              const interestMonth = (loan.remaining_amount * (effectiveRate / 100)) / 12;
               const principalMonth = loan.emi - interestMonth;
               const progress = loan.principal > 0 ? (((loan.principal - loan.remaining_amount) / loan.principal) * 100).toFixed(1) : 0;
 
@@ -249,7 +261,7 @@ export default function CreditCards() {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 style={{marginBottom: 0}}>{loan.name}</h3>
-                      <span className="text-xs text-secondary">{creditCards.find(c => c.id === loan.card_id)?.name}</span>
+                      <span className="text-xs text-secondary">{card?.name || "Unknown Card"}</span>
                     </div>
                     <div className="text-warning font-semibold">₹{loan.emi.toLocaleString()}/mo</div>
                   </div>
@@ -267,7 +279,9 @@ export default function CreditCards() {
                   <div className="bg-base p-3 rounded flex-col gap-2" style={{fontSize: '0.875rem'}}>
                     <div className="flex justify-between items-center">
                       <span className="text-secondary">Estimated Interest Rate</span>
-                      <span className="text-danger font-semibold">{loan.interest_rate}% p.a.</span>
+                      <span className={loan.interest_rate > 0 ? "text-primary" : "text-warning"}>
+                        {effectiveRate}% p.a. {loan.interest_rate === 0 && "(Card Rate)"}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-secondary">Monthly Interest Cost</span>
