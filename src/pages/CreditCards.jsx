@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useFinanceStore } from "../store/financeStore";
 import { createCreditCard, createCreditCardLoan } from "../api/client";
-import { CreditCard as CardIcon, Plus, AlertCircle, Info, Receipt, TrendingDown } from "lucide-react";
+import { CreditCard as CardIcon, Plus, AlertCircle, Info, Receipt, TrendingDown, Calculator } from "lucide-react";
 
 export default function CreditCards() {
   const { creditCards, fetchCreditCards, creditCardLoans, fetchCreditCardLoans, loading } = useFinanceStore();
@@ -51,10 +51,23 @@ export default function CreditCards() {
 
   const handleLoanSubmit = async (e) => {
     e.preventDefault();
+    
+    let finalInterestRate = loanFormData.interest_rate;
+    
+    // Auto-calculate interest rate if set to 0
+    if (finalInterestRate === 0 && loanFormData.emi > 0 && loanFormData.tenure_months > 0 && loanFormData.principal > 0) {
+      const totalPaid = loanFormData.emi * loanFormData.tenure_months;
+      const totalInterest = totalPaid - loanFormData.principal;
+      // Simple Interest approximation for effective rate
+      finalInterestRate = (totalInterest / loanFormData.principal) / (loanFormData.tenure_months / 12) * 100;
+      finalInterestRate = parseFloat(finalInterestRate.toFixed(2));
+    }
+
     try {
       await createCreditCardLoan({
         ...loanFormData,
         card_id: parseInt(loanFormData.card_id),
+        interest_rate: finalInterestRate,
         remaining_amount: loanFormData.remaining_amount || loanFormData.principal
       });
       setLoanFormData({ card_id: "", name: "", principal: 0, remaining_amount: 0, interest_rate: 0, interest_type: "yearly", emi: 0, tenure_months: 12, emis_paid: 0 });
@@ -85,7 +98,7 @@ export default function CreditCards() {
                 <input type="number" step="0.01" className="form-control" required value={formData.limit} onChange={(e) => setFormData({ ...formData, limit: parseFloat(e.target.value) })} />
               </div>
               <div className="form-group">
-                <label className="form-label">Used Amount (Total Swipes)</label>
+                <label className="form-label">Used Amount (Swipes)</label>
                 <input type="number" step="0.01" className="form-control" required value={formData.used_amount} onChange={(e) => setFormData({ ...formData, used_amount: parseFloat(e.target.value) })} />
               </div>
             </div>
@@ -149,7 +162,7 @@ export default function CreditCards() {
                 <input type="number" step="0.01" className="form-control" required value={loanFormData.emi} onChange={(e) => setLoanFormData({ ...loanFormData, emi: parseFloat(e.target.value) })} />
               </div>
               <div className="form-group">
-                <label className="form-label">Interest Rate (%)</label>
+                <label className="form-label">Rate (%) (Put 0 to Auto-calc)</label>
                 <input type="number" step="0.01" className="form-control" required value={loanFormData.interest_rate} onChange={(e) => setLoanFormData({ ...loanFormData, interest_rate: parseFloat(e.target.value) })} />
               </div>
             </div>
@@ -164,7 +177,7 @@ export default function CreditCards() {
               </div>
             </div>
             <button type="submit" className="btn btn-secondary w-full" disabled={!loanFormData.card_id}>
-              <Plus size={18} /> Add EMI Debt
+              <Calculator size={18} /> Add EMI Debt
             </button>
           </form>
         </div>
@@ -178,7 +191,11 @@ export default function CreditCards() {
         ) : (
           <div className="grid-cards">
             {creditCards.map((card) => {
-              const util = ((card.used_amount / card.limit) * 100).toFixed(1);
+              const associatedLoans = creditCardLoans.filter(l => l.card_id === card.id && l.status === 'active');
+              const emiDebt = associatedLoans.reduce((sum, l) => sum + l.remaining_amount, 0);
+              const totalDebt = card.used_amount + emiDebt;
+              const util = ((totalDebt / card.limit) * 100).toFixed(1);
+              
               return (
                 <div key={card.id} className="card">
                   <div className="flex items-center justify-between mb-4">
@@ -187,14 +204,14 @@ export default function CreditCards() {
                       <h3 style={{marginBottom: 0}}>{card.name}</h3>
                     </div>
                     <div className="text-right">
-                      <div className="text-danger font-semibold">₹{card.used_amount.toLocaleString()}</div>
-                      <div className="text-xs text-secondary">Total Used</div>
+                      <div className="text-danger font-semibold">₹{totalDebt.toLocaleString()}</div>
+                      <div className="text-xs text-secondary">Total Blocked</div>
                     </div>
                   </div>
                   
                   <div className="mb-4">
                     <div className="flex justify-between text-xs text-secondary mb-1">
-                       <span>{util}% Utilization</span>
+                       <span>{util}% Full Utilization</span>
                        <span className="text-warning">Bill: ₹{card.current_month_bill.toLocaleString()}</span>
                     </div>
                     <div style={{height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden'}}>
@@ -237,7 +254,6 @@ export default function CreditCards() {
                     <div className="text-warning font-semibold">₹{loan.emi.toLocaleString()}/mo</div>
                   </div>
                   
-                  {/* Progress Bar */}
                   <div className="mb-4">
                     <div className="flex justify-between text-xs text-secondary mb-1">
                       <span>Progress: {progress}% Paid</span>
@@ -250,18 +266,12 @@ export default function CreditCards() {
 
                   <div className="bg-base p-3 rounded flex-col gap-2" style={{fontSize: '0.875rem'}}>
                     <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-1 text-secondary">
-                         <TrendingDown size={14} className="text-danger" />
-                         <span>Monthly Interest Cost</span>
-                      </div>
-                      <span className="text-danger">₹{interestMonth.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                      <span className="text-secondary">Estimated Interest Rate</span>
+                      <span className="text-danger font-semibold">{loan.interest_rate}% p.a.</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-1 text-secondary">
-                         <TrendingDown size={14} className="text-success" />
-                         <span>Principal Component</span>
-                      </div>
-                      <span className="text-success">₹{principalMonth.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                      <span className="text-secondary">Monthly Interest Cost</span>
+                      <span className="text-danger">₹{interestMonth.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
                     </div>
                     <div className="flex justify-between items-center mt-1 pt-1 border-t border-white/5">
                       <span className="text-secondary">Remaining Balance</span>
