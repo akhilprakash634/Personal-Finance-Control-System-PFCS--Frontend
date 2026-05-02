@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import Accounts from "./pages/Accounts";
 import Loans from "./pages/Loans";
 import CreditCards from "./pages/CreditCards";
+import Payments from "./pages/Payments";
 import Login from "./pages/Login";
 import { useFinanceStore } from "./store/financeStore";
 
@@ -27,6 +28,7 @@ function App() {
           <Route path="accounts" element={<Accounts />} />
           <Route path="loans" element={<Loans />} />
           <Route path="credit-cards" element={<CreditCards />} />
+          <Route path="payments" element={<Payments />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -1,5 +1,8 @@
 import { create } from "zustand";
-import { getDashboard, getAccounts, getLoans, getCreditCards, loginGoogle } from "../api/client";
+import { 
+  getDashboard, getAccounts, getLoans, getCreditCards, 
+  getCreditCardLoans, getPayments, loginGoogle 
+} from "../api/client";
 
 export const useFinanceStore = create((set, get) => ({
   user: JSON.parse(localStorage.getItem("user")) || null,
@@ -7,6 +10,8 @@ export const useFinanceStore = create((set, get) => ({
   accounts: [],
   loans: [],
   creditCards: [],
+  creditCardLoans: [],
+  payments: [],
   loading: false,
 
   setUser: (user) => {
@@ -32,7 +37,7 @@ export const useFinanceStore = create((set, get) => ({
   logout: () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    set({ user: null, dashboard: null, accounts: [], loans: [], creditCards: [] });
+    set({ user: null, dashboard: null, accounts: [], loans: [], creditCards: [], creditCardLoans: [], payments: [] });
   },
 
   fetchDashboard: async () => {
@@ -78,6 +83,30 @@ export const useFinanceStore = create((set, get) => ({
       set({ creditCards: data, loading: false });
     } catch (error) {
       console.error("Error fetching credit cards:", error);
+      if (error.response?.status === 401) get().logout();
+      set({ loading: false });
+    }
+  },
+
+  fetchCreditCardLoans: async () => {
+    set({ loading: true });
+    try {
+      const data = await getCreditCardLoans();
+      set({ creditCardLoans: data, loading: false });
+    } catch (error) {
+      console.error("Error fetching credit card loans:", error);
+      if (error.response?.status === 401) get().logout();
+      set({ loading: false });
+    }
+  },
+
+  fetchPayments: async () => {
+    set({ loading: true });
+    try {
+      const data = await getPayments();
+      set({ payments: data, loading: false });
+    } catch (error) {
+      console.error("Error fetching payments:", error);
       if (error.response?.status === 401) get().logout();
       set({ loading: false });
     }

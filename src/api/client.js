@@ -65,3 +65,25 @@ export const createCreditCard = async (cardData) => {
   const response = await apiClient.post("/credit-cards/", cardData);
   return response.data;
 };
+
+// Credit Card Loans API
+export const getCreditCardLoans = async () => {
+  const response = await apiClient.get("/credit-card-loans/");
+  return response.data;
+};
+
+export const createCreditCardLoan = async (loanData) => {
+  const response = await apiClient.post("/credit-card-loans/", loanData);
+  return response.data;
+};
+
+// Payments API
+export const getPayments = async () => {
+  const response = await apiClient.get("/payments/");
+  return response.data;
+};
+
+export const createPayment = async (paymentData) => {
+  const response = await apiClient.post("/payments/", paymentData);
+  return response.data;
+};

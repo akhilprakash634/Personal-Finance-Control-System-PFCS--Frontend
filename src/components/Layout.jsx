@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Wallet, CreditCard, Landmark, LogOut, User, Menu, X } from "lucide-react";
+import { LayoutDashboard, Wallet, CreditCard, Landmark, LogOut, User, Menu, X, Receipt } from "lucide-react";
 import { useFinanceStore } from "../store/financeStore";
 
 export default function Layout() {
@@ -59,6 +59,10 @@ export default function Layout() {
           <NavLink to="/credit-cards" onClick={closeSidebar} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
             <CreditCard size={20} />
             Credit Cards
+          </NavLink>
+          <NavLink to="/payments" onClick={closeSidebar} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+            <Receipt size={20} />
+            Payments
           </NavLink>
         </nav>
 
