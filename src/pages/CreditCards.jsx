@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useFinanceStore } from "../store/financeStore";
 import { createCreditCard, createCreditCardLoan } from "../api/client";
-import { CreditCard as CardIcon, Plus, AlertCircle, Info, Receipt } from "lucide-react";
+import { CreditCard as CardIcon, Plus, AlertCircle, Info, Receipt, TrendingDown } from "lucide-react";
 
 export default function CreditCards() {
   const { creditCards, fetchCreditCards, creditCardLoans, fetchCreditCardLoans, loading } = useFinanceStore();
@@ -25,7 +25,8 @@ export default function CreditCards() {
     interest_rate: 0,
     interest_type: "yearly",
     emi: 0,
-    tenure_months: 12
+    tenure_months: 12,
+    emis_paid: 0
   });
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export default function CreditCards() {
         card_id: parseInt(loanFormData.card_id),
         remaining_amount: loanFormData.remaining_amount || loanFormData.principal
       });
-      setLoanFormData({ card_id: "", name: "", principal: 0, remaining_amount: 0, interest_rate: 0, interest_type: "yearly", emi: 0, tenure_months: 12 });
+      setLoanFormData({ card_id: "", name: "", principal: 0, remaining_amount: 0, interest_rate: 0, interest_type: "yearly", emi: 0, tenure_months: 12, emis_paid: 0 });
       fetchCreditCardLoans();
     } catch (error) {
       console.error("Error creating CC loan:", error);
@@ -111,17 +112,6 @@ export default function CreditCards() {
               </div>
             </div>
             
-            <div className="grid-2" style={{gap: '1rem'}}>
-               <div className="form-group">
-                 <label className="form-label">Billing Date</label>
-                 <input type="number" min="1" max="31" className="form-control" required value={formData.billing_date} onChange={(e) => setFormData({ ...formData, billing_date: parseInt(e.target.value) })} />
-               </div>
-               <div className="form-group">
-                 <label className="form-label">Due Date</label>
-                 <input type="number" min="1" max="31" className="form-control" required value={formData.due_date} onChange={(e) => setFormData({ ...formData, due_date: parseInt(e.target.value) })} />
-               </div>
-            </div>
-
             <button type="submit" className="btn btn-primary w-full">
               <Plus size={18} /> Add Card
             </button>
@@ -130,7 +120,7 @@ export default function CreditCards() {
 
         {/* SECTION 2: ADD CC LOAN / EMI */}
         <div className="card">
-          <h2 className="mb-4">Convert to EMI / PayLater</h2>
+          <h2 className="mb-4">Add EMI Debt / PayLater</h2>
           <form onSubmit={handleLoanSubmit}>
             <div className="form-group">
               <label className="form-label">Select Credit Card</label>
@@ -140,27 +130,37 @@ export default function CreditCards() {
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Loan Name (e.g. Amazon EMI, iPhone 15)</label>
+              <label className="form-label">EMI Name (e.g. Amazon EMI)</label>
               <input className="form-control" required value={loanFormData.name} onChange={(e) => setLoanFormData({ ...loanFormData, name: e.target.value })} />
             </div>
             <div className="grid-2" style={{gap: '1rem'}}>
               <div className="form-group">
-                <label className="form-label">Principal (Total)</label>
+                <label className="form-label">Original Principal</label>
                 <input type="number" step="0.01" className="form-control" required value={loanFormData.principal} onChange={(e) => setLoanFormData({ ...loanFormData, principal: parseFloat(e.target.value) })} />
               </div>
               <div className="form-group">
-                <label className="form-label">Monthly EMI</label>
-                <input type="number" step="0.01" className="form-control" required value={loanFormData.emi} onChange={(e) => setLoanFormData({ ...loanFormData, emi: parseFloat(e.target.value) })} />
+                <label className="form-label">Remaining Amount</label>
+                <input type="number" step="0.01" className="form-control" required value={loanFormData.remaining_amount} onChange={(e) => setLoanFormData({ ...loanFormData, remaining_amount: parseFloat(e.target.value) })} />
               </div>
             </div>
             <div className="grid-2" style={{gap: '1rem'}}>
               <div className="form-group">
+                <label className="form-label">Monthly EMI (₹)</label>
+                <input type="number" step="0.01" className="form-control" required value={loanFormData.emi} onChange={(e) => setLoanFormData({ ...loanFormData, emi: parseFloat(e.target.value) })} />
+              </div>
+              <div className="form-group">
                 <label className="form-label">Interest Rate (%)</label>
                 <input type="number" step="0.01" className="form-control" required value={loanFormData.interest_rate} onChange={(e) => setLoanFormData({ ...loanFormData, interest_rate: parseFloat(e.target.value) })} />
               </div>
+            </div>
+            <div className="grid-2" style={{gap: '1rem'}}>
               <div className="form-group">
                 <label className="form-label">Tenure (Months)</label>
                 <input type="number" className="form-control" required value={loanFormData.tenure_months} onChange={(e) => setLoanFormData({ ...loanFormData, tenure_months: parseInt(e.target.value) })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">EMIs Paid Already</label>
+                <input type="number" className="form-control" required value={loanFormData.emis_paid} onChange={(e) => setLoanFormData({ ...loanFormData, emis_paid: parseInt(e.target.value) })} />
               </div>
             </div>
             <button type="submit" className="btn btn-secondary w-full" disabled={!loanFormData.card_id}>
@@ -205,17 +205,6 @@ export default function CreditCards() {
                       <span>Avail: ₹{card.available_limit.toLocaleString()}</span>
                     </div>
                   </div>
-
-                  <div className="bg-base p-3 rounded flex-col gap-2" style={{fontSize: '0.875rem'}}>
-                    <div className="flex justify-between">
-                      <span className="text-secondary">Billing Date</span>
-                      <span>Day {card.billing_date}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-secondary">Interest Rate</span>
-                      <span>{card.interest_rate}%</span>
-                    </div>
-                  </div>
                 </div>
               );
             })}
@@ -233,26 +222,55 @@ export default function CreditCards() {
           </div>
         ) : (
           <div className="grid-cards">
-            {creditCardLoans.map((loan) => (
-              <div key={loan.id} className="card" style={{borderLeft: '4px solid var(--accent-primary)'}}>
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 style={{marginBottom: 0}}>{loan.name}</h3>
-                    <span className="text-xs text-secondary">{creditCards.find(c => c.id === loan.card_id)?.name}</span>
+            {creditCardLoans.map((loan) => {
+              const interestMonth = (loan.remaining_amount * (loan.interest_rate / 100)) / 12;
+              const principalMonth = loan.emi - interestMonth;
+              const progress = loan.principal > 0 ? (((loan.principal - loan.remaining_amount) / loan.principal) * 100).toFixed(1) : 0;
+
+              return (
+                <div key={loan.id} className="card" style={{borderLeft: '4px solid var(--accent-primary)'}}>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 style={{marginBottom: 0}}>{loan.name}</h3>
+                      <span className="text-xs text-secondary">{creditCards.find(c => c.id === loan.card_id)?.name}</span>
+                    </div>
+                    <div className="text-warning font-semibold">₹{loan.emi.toLocaleString()}/mo</div>
                   </div>
-                  <div className="text-warning font-semibold">₹{loan.emi.toLocaleString()}/mo</div>
+                  
+                  {/* Progress Bar */}
+                  <div className="mb-4">
+                    <div className="flex justify-between text-xs text-secondary mb-1">
+                      <span>Progress: {progress}% Paid</span>
+                      <span>{loan.emis_paid}/{loan.tenure_months} months</span>
+                    </div>
+                    <div style={{height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden'}}>
+                      <div style={{height: '100%', background: 'var(--accent-success)', width: `${Math.min(progress, 100)}%`}}></div>
+                    </div>
+                  </div>
+
+                  <div className="bg-base p-3 rounded flex-col gap-2" style={{fontSize: '0.875rem'}}>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-1 text-secondary">
+                         <TrendingDown size={14} className="text-danger" />
+                         <span>Monthly Interest Cost</span>
+                      </div>
+                      <span className="text-danger">₹{interestMonth.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-1 text-secondary">
+                         <TrendingDown size={14} className="text-success" />
+                         <span>Principal Component</span>
+                      </div>
+                      <span className="text-success">₹{principalMonth.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                    </div>
+                    <div className="flex justify-between items-center mt-1 pt-1 border-t border-white/5">
+                      <span className="text-secondary">Remaining Balance</span>
+                      <span className="text-primary font-semibold">₹{loan.remaining_amount.toLocaleString()}</span>
+                    </div>
+                  </div>
                 </div>
-                
-                <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center">
-                  <div className="text-xs text-secondary">
-                    Balance: <span className="text-primary">₹{loan.remaining_amount.toLocaleString()}</span>
-                  </div>
-                  <div className="text-xs text-secondary">
-                    Rate: {loan.interest_rate}%
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
