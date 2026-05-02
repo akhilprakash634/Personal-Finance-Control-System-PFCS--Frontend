@@ -5,6 +5,6 @@ services:
     build: .
     container_name: pfcs-frontend
     ports:
-      - "80:80"
+      - "3001:80"
     env_file: .env
     restart: always
