@@ -67,6 +67,45 @@ body {
 .mt-4 { margin-top: 1rem; }
 .text-primary { color: var(--accent-primary); }
 
+/* Global Button Reset */
+button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+button:focus {
+  outline: none;
+}
+
+.btn-icon {
+  background: transparent !important;
+  border: none !important;
+  padding: 4px;
+  border-radius: 50%;
+}
+
+.btn-icon:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Hover Actions */
+.hover-actions {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.card:hover .hover-actions {
+  opacity: 1;
+}
+
 /* Layout Structure */
 .app-container {
   display: flex;

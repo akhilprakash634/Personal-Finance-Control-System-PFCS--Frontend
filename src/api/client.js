@@ -66,6 +66,16 @@ export const createCreditCard = async (cardData) => {
   return response.data;
 };
 
+export const updateCreditCard = async (id, cardData) => {
+  const response = await apiClient.put(`/credit-cards/${id}`, cardData);
+  return response.data;
+};
+
+export const deleteCreditCard = async (id) => {
+  const response = await apiClient.delete(`/credit-cards/${id}`);
+  return response.data;
+};
+
 // Credit Card Loans API
 export const getCreditCardLoans = async () => {
   const response = await apiClient.get("/credit-card-loans/");
@@ -74,6 +84,16 @@ export const getCreditCardLoans = async () => {
 
 export const createCreditCardLoan = async (loanData) => {
   const response = await apiClient.post("/credit-card-loans/", loanData);
+  return response.data;
+};
+
+export const updateCreditCardLoan = async (id, loanData) => {
+  const response = await apiClient.put(`/credit-card-loans/${id}`, loanData);
+  return response.data;
+};
+
+export const deleteCreditCardLoan = async (id) => {
+  const response = await apiClient.delete(`/credit-card-loans/${id}`);
   return response.data;
 };
 
