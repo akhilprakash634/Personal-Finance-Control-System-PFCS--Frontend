@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useFinanceStore } from "../store/financeStore";
 import { createCreditCard, createCreditCardLoan, updateCreditCard, deleteCreditCard, updateCreditCardLoan, deleteCreditCardLoan } from "../api/client";
-import { CreditCard as CardIcon, Plus, AlertCircle, Info, Receipt, TrendingDown, Calculator, Percent, Edit2, Trash2, X } from "lucide-react";
+import { CreditCard as CardIcon, Plus, AlertCircle, Info, Receipt, TrendingDown, Calculator, Percent, Edit2, Trash2, X, Calendar } from "lucide-react";
 
 export default function CreditCards() {
   const { creditCards, fetchCreditCards, creditCardLoans, fetchCreditCardLoans, loading } = useFinanceStore();
@@ -41,8 +41,6 @@ export default function CreditCards() {
   const handleLoanFieldChange = (field, value) => {
     setLoanFormData(prev => {
       const next = { ...prev, [field]: value };
-      
-      // Force recalculation for any relevant field change
       const principal = field === 'principal' ? value : next.principal;
       const emisPaid = field === 'emis_paid' ? value : next.emis_paid;
       const emi = field === 'emi' ? value : next.emi;
@@ -52,7 +50,6 @@ export default function CreditCards() {
         if (tenure > 0 && emisPaid >= tenure) {
           next.remaining_amount = 0;
         } else {
-          // Calculation: Principal - (Paid EMIs * EMI)
           const balance = principal - (emisPaid * emi);
           next.remaining_amount = parseFloat(Math.max(0, balance).toFixed(2));
         }
@@ -87,7 +84,6 @@ export default function CreditCards() {
     }
 
     try {
-      // Ensure we use the latest auto-calculated remaining_amount
       const data = { 
         ...loanFormData, 
         card_id: parseInt(loanFormData.card_id), 
@@ -122,7 +118,6 @@ export default function CreditCards() {
   };
 
   const handleEditLoan = (loan) => {
-    // When editing, we populate the form. 
     setLoanFormData({ ...loan, card_id: loan.card_id.toString() });
     setIsEditingLoan(loan.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -149,7 +144,7 @@ export default function CreditCards() {
       </div>
 
       <div className="grid-2">
-        {/* ADD/EDIT CARD */}
+        {/* ADD/EDIT CARD FORM */}
         <div className="card">
           <div className="flex justify-between items-center mb-4">
             <h2 className="mb-0">{isEditingCard ? "Edit Credit Card" : "Add Credit Card"}</h2>
@@ -160,6 +155,7 @@ export default function CreditCards() {
               <label className="form-label">Card Name</label>
               <input className="form-control" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
             </div>
+            
             <div className="grid-2" style={{gap: '1rem'}}>
               <div className="form-group">
                 <label className="form-label">Total Limit</label>
@@ -170,23 +166,47 @@ export default function CreditCards() {
                 <input type="number" step="0.01" className="form-control" required value={formData.used_amount} onChange={(e) => setFormData({ ...formData, used_amount: parseFloat(e.target.value) || 0 })} />
               </div>
             </div>
+
             <div className="grid-2" style={{gap: '1rem'}}>
               <div className="form-group">
-                <label className="form-label">Bill Amt</label>
+                <label className="form-label">Current Bill</label>
                 <input type="number" step="0.01" className="form-control" required value={formData.current_month_bill} onChange={(e) => setFormData({ ...formData, current_month_bill: parseFloat(e.target.value) || 0 })} />
               </div>
               <div className="form-group">
-                <label className="form-label">Avail. Limit</label>
-                <input type="number" step="0.01" className="form-control" required value={formData.available_limit} onChange={(e) => setFormData({ ...formData, available_limit: parseFloat(e.target.value) || 0 })} />
+                <label className="form-label">Min. Due</label>
+                <input type="number" step="0.01" className="form-control" required value={formData.minimum_due} onChange={(e) => setFormData({ ...formData, minimum_due: parseFloat(e.target.value) || 0 })} />
               </div>
             </div>
+
+            <div className="grid-2" style={{gap: '1rem'}}>
+              <div className="form-group">
+                <label className="form-label">Available (Bank)</label>
+                <input type="number" step="0.01" className="form-control" required value={formData.available_limit} onChange={(e) => setFormData({ ...formData, available_limit: parseFloat(e.target.value) || 0 })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Rate (Monthly %)</label>
+                <input type="number" step="0.01" className="form-control" required value={formData.interest_rate} onChange={(e) => setFormData({ ...formData, interest_rate: parseFloat(e.target.value) || 0 })} />
+              </div>
+            </div>
+
+            <div className="grid-2" style={{gap: '1rem'}}>
+              <div className="form-group">
+                <label className="form-label">Billing Date (1-31)</label>
+                <input type="number" min="1" max="31" className="form-control" required value={formData.billing_date} onChange={(e) => setFormData({ ...formData, billing_date: parseInt(e.target.value) || 1 })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Due Date (1-31)</label>
+                <input type="number" min="1" max="31" className="form-control" required value={formData.due_date} onChange={(e) => setFormData({ ...formData, due_date: parseInt(e.target.value) || 1 })} />
+              </div>
+            </div>
+
             <button type="submit" className="btn btn-primary w-full mt-2">
               {isEditingCard ? "Update Card" : "Add Card"}
             </button>
           </form>
         </div>
 
-        {/* ADD/EDIT EMI */}
+        {/* ADD/EDIT EMI FORM */}
         <div className="card">
           <div className="flex justify-between items-center mb-4">
             <h2 className="mb-0">{isEditingLoan ? "Edit EMI" : "Add EMI Debt"}</h2>
@@ -248,7 +268,7 @@ export default function CreditCards() {
         </div>
       </div>
 
-      {/* CARDS LIST */}
+      {/* ACTIVE CARDS SECTION */}
       <div>
         <h2 className="mb-4">Active Credit Cards</h2>
         <div className="grid-cards">
@@ -295,7 +315,11 @@ export default function CreditCards() {
                      <span className="text-secondary">EMI Loan Debt</span>
                      <span className="text-warning">₹{emiBal.toLocaleString()}</span>
                    </div>
-                   <div className="pt-2 border-t border-white/5 flex justify-between font-semibold">
+                   <div className="flex justify-between pt-1 border-t border-white/5">
+                     <span className="text-secondary">Available Limit</span>
+                     <span className="text-success font-semibold">₹{card.available_limit.toLocaleString()}</span>
+                   </div>
+                   <div className="flex justify-between pt-1 font-semibold">
                      <span className="text-secondary">Total Blocked</span>
                      <span className="text-danger">₹{totalUsed.toLocaleString()}</span>
                    </div>
@@ -306,7 +330,7 @@ export default function CreditCards() {
         </div>
       </div>
 
-      {/* EMIS LIST */}
+      {/* ACTIVE EMIS SECTION */}
       <div>
         <h2 className="mb-4">Active EMIs & PayLater</h2>
         <div className="grid-cards">
@@ -318,11 +342,7 @@ export default function CreditCards() {
               if (totalInt > 0) rate = parseFloat(((totalInt / loan.principal) / (loan.tenure_months / 12) * 100).toFixed(2));
             }
             const displayRate = rate > 0 ? rate : (card?.interest_rate || 0);
-            
-            // Clean zero formatting for interest to avoid -0
-            const rawMonthlyInt = (Math.max(0, loan.remaining_amount) * (displayRate / 100)) / 12;
-            const interestMonth = Math.abs(rawMonthlyInt);
-            
+            const interestMonth = Math.abs((Math.max(0, loan.remaining_amount) * (displayRate / 100)) / 12);
             const progress = loan.tenure_months > 0 ? ((loan.emis_paid / loan.tenure_months) * 100).toFixed(1) : 0;
             const safeRemaining = Math.max(0, loan.remaining_amount);
 

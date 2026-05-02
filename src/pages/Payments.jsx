@@ -47,10 +47,33 @@ export default function Payments() {
   };
 
   const getDebtList = () => {
-    if (formData.debt_type === "loan") return loans;
-    if (formData.debt_type === "credit_card") return creditCards;
-    if (formData.debt_type === "credit_card_loan") return creditCardLoans;
-    return [];
+    let list = [];
+    if (formData.debt_type === "loan") list = loans;
+    if (formData.debt_type === "credit_card") list = creditCards;
+    if (formData.debt_type === "credit_card_loan") list = creditCardLoans;
+    
+    // Filter: Only show debts that still have a balance to be paid
+    return list.filter(d => {
+      if (formData.debt_type === "credit_card") return (d.used_amount > 0 || d.current_month_bill > 0);
+      return (d.remaining_amount > 0);
+    });
+  };
+
+  const handleDebtChange = (e) => {
+    const id = e.target.value;
+    const list = getDebtList();
+    const selected = list.find(d => d.id.toString() === id);
+    
+    let autoAmount = 0;
+    if (selected) {
+      autoAmount = selected.emi || selected.minimum_due || selected.monthly_emi || 0;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      debt_id: id,
+      amount: autoAmount
+    }));
   };
 
   return (
@@ -71,7 +94,7 @@ export default function Payments() {
               <select 
                 className="form-control" 
                 value={formData.debt_type} 
-                onChange={(e) => setFormData({ ...formData, debt_type: e.target.value, debt_id: "" })}
+                onChange={(e) => setFormData({ ...formData, debt_type: e.target.value, debt_id: "", amount: 0 })}
               >
                 <option value="loan">Personal Loans</option>
                 <option value="credit_card">Credit Card Swipes</option>
@@ -85,7 +108,7 @@ export default function Payments() {
                 className="form-control" 
                 required 
                 value={formData.debt_id} 
-                onChange={(e) => setFormData({ ...formData, debt_id: e.target.value })}
+                onChange={handleDebtChange}
               >
                 <option value="">Choose debt...</option>
                 {getDebtList().map(d => (

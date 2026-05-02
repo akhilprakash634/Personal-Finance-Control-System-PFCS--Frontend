@@ -55,6 +55,16 @@ export const createLoan = async (loanData) => {
   return response.data;
 };
 
+export const updateLoan = async (id, loanData) => {
+  const response = await apiClient.put(`/loans/${id}`, loanData);
+  return response.data;
+};
+
+export const deleteLoan = async (id) => {
+  const response = await apiClient.delete(`/loans/${id}`);
+  return response.data;
+};
+
 // Credit Cards API
 export const getCreditCards = async () => {
   const response = await apiClient.get("/credit-cards/");
