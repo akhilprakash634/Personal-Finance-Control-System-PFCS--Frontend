@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8000"; // Assuming backend will run on port 8000
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export const apiClient = axios.create({
   baseURL: API_URL,
@@ -8,6 +8,24 @@ export const apiClient = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+// Add interceptor to attach JWT token
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Auth API
+export const loginGoogle = async (token) => {
+  const response = await apiClient.post("/auth/google", { token });
+  return response.data;
+};
 
 // Dashboard API
 export const getDashboard = async () => {

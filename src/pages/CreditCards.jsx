@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { getCreditCards, createCreditCard } from "../api/client";
+import { useFinanceStore } from "../store/financeStore";
+import { createCreditCard } from "../api/client";
 import { CreditCard as CardIcon, Plus } from "lucide-react";
 
 export default function CreditCards() {
-  const [cards, setCards] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { creditCards, fetchCreditCards, loading } = useFinanceStore();
   const [formData, setFormData] = useState({
     name: "",
     limit: 0,
@@ -16,26 +16,15 @@ export default function CreditCards() {
   });
 
   useEffect(() => {
-    fetchCards();
-  }, []);
-
-  const fetchCards = async () => {
-    try {
-      const data = await getCreditCards();
-      setCards(data);
-    } catch (error) {
-      console.error("Error fetching cards:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchCreditCards();
+  }, [fetchCreditCards]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await createCreditCard(formData);
       setFormData({ name: "", limit: 0, used_amount: 0, interest_rate: 0, minimum_due: 0, billing_date: 1, due_date: 1 });
-      fetchCards();
+      fetchCreditCards();
     } catch (error) {
       console.error("Error creating credit card:", error);
     }
@@ -95,11 +84,11 @@ export default function CreditCards() {
           <h2 className="mb-4">Your Cards</h2>
           {loading ? (
             <p>Loading...</p>
-          ) : cards.length === 0 ? (
+          ) : creditCards.length === 0 ? (
             <p className="text-secondary">No credit cards found.</p>
           ) : (
             <div className="flex-col gap-4">
-              {cards.map((card) => {
+              {creditCards.map((card) => {
                 const util = ((card.used_amount / card.limit) * 100).toFixed(1);
                 return (
                   <div key={card.id} className="card" style={{padding: '1rem'}}>

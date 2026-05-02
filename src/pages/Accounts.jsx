@@ -1,26 +1,15 @@
 import { useState, useEffect } from "react";
-import { getAccounts, createAccount } from "../api/client";
+import { useFinanceStore } from "../store/financeStore";
+import { createAccount } from "../api/client";
 import { Landmark, Plus } from "lucide-react";
 
 export default function Accounts() {
-  const [accounts, setAccounts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { accounts, fetchAccounts, loading } = useFinanceStore();
   const [formData, setFormData] = useState({ name: "", type: "bank", balance: 0 });
 
   useEffect(() => {
     fetchAccounts();
-  }, []);
-
-  const fetchAccounts = async () => {
-    try {
-      const data = await getAccounts();
-      setAccounts(data);
-    } catch (error) {
-      console.error("Error fetching accounts:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [fetchAccounts]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

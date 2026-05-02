@@ -1,30 +1,20 @@
-import { useState, useEffect } from "react";
-import { getDashboard } from "../api/client";
-import { AlertTriangle, TrendingUp, Target, Activity } from "lucide-react";
+import { useEffect } from "react";
+import { useFinanceStore } from "../store/financeStore";
+import SummaryCard from "../components/SummaryCard";
+import AlertBox from "../components/AlertBox";
+import { AlertTriangle, TrendingUp, Target, Activity, PieChart, CheckCircle } from "lucide-react";
 
 export default function Dashboard() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { dashboard, fetchDashboard, loading } = useFinanceStore();
 
   useEffect(() => {
     fetchDashboard();
-  }, []);
-
-  const fetchDashboard = async () => {
-    try {
-      const res = await getDashboard();
-      setData(res);
-    } catch (error) {
-      console.error("Error fetching dashboard:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [fetchDashboard]);
 
   if (loading) return <div className="p-6">Loading dashboard...</div>;
-  if (!data) return <div className="p-6">Error loading data.</div>;
+  if (!dashboard) return <div className="p-6">Error loading data. Check if you are logged in.</div>;
 
-  const { summary, monthly_requirement, strategy, alerts } = data;
+  const { summary, monthly_requirement, strategy, alerts, this_month } = dashboard;
 
   return (
     <div className="flex-col gap-6">
@@ -32,32 +22,72 @@ export default function Dashboard() {
 
       {/* Top: Summary */}
       <div className="grid-cards mb-6">
+        <SummaryCard 
+          title="Total Balance" 
+          amount={summary.total_balance} 
+          icon={<Activity size={18} />} 
+        />
+        <SummaryCard 
+          title="Total Debt" 
+          amount={summary.total_debt} 
+          icon={<AlertTriangle size={18} />} 
+          isDanger={true}
+        />
+        <SummaryCard 
+          title="Net Worth" 
+          amount={summary.net_worth} 
+          icon={<TrendingUp size={18} />} 
+          isGradient={true}
+        />
+      </div>
+
+      {/* This Month Payments & Insights */}
+      <div className="grid-2 mb-6">
         <div className="card">
-          <div className="text-secondary flex items-center gap-2 mb-2"><Activity size={18} /> Total Balance</div>
-          <h2>₹{summary.total_balance.toLocaleString()}</h2>
+          <h3 className="flex items-center gap-2 mb-4">
+            <PieChart size={20} className="text-primary"/> This Month's Payments
+          </h3>
+          <div className="flex-col gap-4">
+            <div className="flex justify-between items-center">
+              <span className="text-secondary">Total Paid</span>
+              <span className="font-semibold">₹{this_month.total_paid.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-secondary">Interest Paid</span>
+              <span className="text-danger">₹{this_month.interest_paid.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-secondary">Principal Reduced</span>
+              <span className="text-success">₹{this_month.principal_reduced.toLocaleString()}</span>
+            </div>
+            {this_month.insights.length > 0 && (
+              <div className="mt-2 p-3 rounded bg-base" style={{ borderLeft: '3px solid var(--accent-primary)' }}>
+                {this_month.insights.map((insight, idx) => (
+                  <p key={idx} className="text-sm italic">{insight}</p>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+
         <div className="card">
-          <div className="text-secondary flex items-center gap-2 mb-2"><AlertTriangle size={18} /> Total Debt</div>
-          <h2 className="text-danger">₹{summary.total_debt.toLocaleString()}</h2>
-        </div>
-        <div className="card card-gradient">
-          <div className="flex items-center gap-2 mb-2"><TrendingUp size={18} /> Net Worth</div>
-          <h2>₹{summary.net_worth.toLocaleString()}</h2>
+          <h3 className="mb-4">Monthly Requirements</h3>
+          <h2 className="text-warning mb-2">₹{monthly_requirement.total_required.toLocaleString()}</h2>
+          <div className="text-secondary flex-col gap-1">
+            <div className="flex justify-between">
+              <span>Loans EMI</span>
+              <span>₹{monthly_requirement.loan_emi_total.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Credit Cards Min Due</span>
+              <span>₹{monthly_requirement.credit_min_due_total.toLocaleString()}</span>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="grid-2 mb-6">
-        {/* Middle: Monthly Requirements */}
-        <div className="card">
-          <h3 className="mb-4">This Month's Requirement</h3>
-          <h2 className="text-warning mb-2">₹{monthly_requirement.total_required.toLocaleString()}</h2>
-          <div className="text-secondary">
-            <p>Loans EMI: ₹{monthly_requirement.loan_emi_total.toLocaleString()}</p>
-            <p>Credit Cards Min Due: ₹{monthly_requirement.credit_min_due_total.toLocaleString()}</p>
-          </div>
-        </div>
-
-        {/* Bottom: Strategy Focus */}
+        {/* Strategy Focus */}
         <div className="card">
           <h3 className="flex items-center gap-2 mb-4"><Target size={20} className="text-primary"/> Strategy Focus</h3>
           {strategy.focus ? (
@@ -74,23 +104,30 @@ export default function Dashboard() {
               </div>
             </>
           ) : (
-            <p className="text-success">You are debt-free or have no active debts recorded. Enjoy your debt-free life!</p>
+            <div className="flex-col items-center justify-center p-6 text-center">
+               <CheckCircle size={48} className="text-success mb-4" />
+               <p className="text-success font-semibold text-lg">You are debt-free!</p>
+               <p className="text-secondary">All active debts have been cleared.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Alerts */}
+        <div>
+          <h3 className="mb-4">System Alerts</h3>
+          {alerts && alerts.length > 0 ? (
+            <div className="flex-col gap-2">
+              {alerts.map((alert, idx) => (
+                <AlertBox key={idx} message={alert} />
+              ))}
+            </div>
+          ) : (
+            <div className="card flex items-center justify-center p-8 text-secondary">
+              No critical alerts. Everything looks good!
+            </div>
           )}
         </div>
       </div>
-
-      {/* Alerts */}
-      {alerts && alerts.length > 0 && (
-        <div>
-          <h3 className="mb-4">Alerts</h3>
-          {alerts.map((alert, idx) => (
-            <div key={idx} className="alert alert-warning">
-              <AlertTriangle size={20} />
-              {alert}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

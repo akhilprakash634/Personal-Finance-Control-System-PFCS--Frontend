@@ -1,39 +1,30 @@
 import { useState, useEffect } from "react";
-import { getLoans, createLoan } from "../api/client";
+import { useFinanceStore } from "../store/financeStore";
+import { createLoan } from "../api/client";
 import { Wallet, Plus } from "lucide-react";
 
 export default function Loans() {
-  const [loans, setLoans] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { loans, fetchLoans, loading } = useFinanceStore();
   const [formData, setFormData] = useState({
     name: "",
     remaining_amount: 0,
     interest_rate: 0,
     emi: 0,
     extra_payment: 0,
+    tenure: 0,
+    emis_paid: 0,
     due_date: 1
   });
 
   useEffect(() => {
     fetchLoans();
-  }, []);
-
-  const fetchLoans = async () => {
-    try {
-      const data = await getLoans();
-      setLoans(data);
-    } catch (error) {
-      console.error("Error fetching loans:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [fetchLoans]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await createLoan(formData);
-      setFormData({ name: "", remaining_amount: 0, interest_rate: 0, emi: 0, extra_payment: 0, due_date: 1 });
+      setFormData({ name: "", remaining_amount: 0, interest_rate: 0, emi: 0, extra_payment: 0, tenure: 0, emis_paid: 0, due_date: 1 });
       fetchLoans();
     } catch (error) {
       console.error("Error creating loan:", error);
@@ -74,6 +65,16 @@ export default function Loans() {
                 <input type="number" step="0.01" className="form-control" required value={formData.extra_payment} onChange={(e) => setFormData({ ...formData, extra_payment: parseFloat(e.target.value) })} />
               </div>
             </div>
+            <div className="grid-2" style={{gap: '1rem'}}>
+              <div className="form-group">
+                <label className="form-label">Tenure (Months)</label>
+                <input type="number" className="form-control" required value={formData.tenure} onChange={(e) => setFormData({ ...formData, tenure: parseInt(e.target.value) })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">EMIs Paid</label>
+                <input type="number" className="form-control" required value={formData.emis_paid} onChange={(e) => setFormData({ ...formData, emis_paid: parseInt(e.target.value) })} />
+              </div>
+            </div>
             <div className="form-group">
               <label className="form-label">Due Date (Day of month)</label>
               <input type="number" min="1" max="31" className="form-control" required value={formData.due_date} onChange={(e) => setFormData({ ...formData, due_date: parseInt(e.target.value) })} />
@@ -104,6 +105,7 @@ export default function Loans() {
                   <div className="text-secondary flex justify-between" style={{fontSize: '0.875rem'}}>
                     <span>EMI: ₹{loan.emi.toLocaleString()}</span>
                     <span>Interest: {loan.interest_rate}%</span>
+                    <span>Paid: {loan.emis_paid}/{loan.tenure} months</span>
                   </div>
                 </div>
               ))}
